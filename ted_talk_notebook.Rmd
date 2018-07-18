@@ -1,0 +1,96 @@
+#read dataset from the file
+```{r}
+ted=read.csv(file.choose(),sep=',')
+```
+
+#libraries needed for this.
+```{r}
+library(anytime)
+library(dplyr)
+library(hms)
+library(ggplot2)
+library(tm)
+library(wordcloud)
+```
+
+#clean the data
+```{r}
+ted$film_date=anydate(ted$film_date)
+ted$published_date=anydate(ted$published_date)
+ted$duration =hms(ted$duration)
+```
+
+
+#Now explore the data
+```{r}
+plot(ted$duration,ted$views,main = "views on the duration of event")
+```
+
+#top 10 biggest event in no of videos?
+```{r}
+eventcount <- ted %>% group_by(event) %>%
+  summarise(title = n()) %>%
+  arrange(desc(title)) %>%
+  head(n=10)
+```
+
+```{r}
+ggplot(eventcount, aes(x=event, y=title)) +
+  geom_bar(stat="identity")
+```
+
+#most commented ted talk
+```{r}
+   ted %>% 
+   arrange(desc(comments)) %>%
+   select(name, comments,event) %>%
+   head(n=10)
+```
+
+#most viewed ted talk
+```{r}
+ ted %>% 
+   arrange(desc(views)) %>% 
+   select(views, name,event) %>% 
+   head(n=10)
+```
+
+#correlation between views and comments.
+```{r}
+ cor(ted$views, ted$comments)
+ 
+#visual representation
+ ggplot(ted,aes(x=views,y=comments))+geom_point()
+```
+
+#which month month is best for ted talk?
+```{r}
+ ted$month = months(as.date(ted$film_date))
+  ted$month = factor(ted$month)
+  ggplot(ted, aes(x=month, fill=month)) + geom_bar() + guides(fill=FALSE)
+```
+
+#trend of ted talk
+```{r}
+year=substr(ted$film_date,start = 1,stop=4)
+ year=as.factor(year)
+  plot(year)
+```
+
+#most popular ted talk?
+```{r}
+  doc=Corpus(VectorSource(ted$tags))
+  a=tm_map(doc,removePunctuation)
+  dtm=TermDocumentMatrix(a)
+  m=as.matrix(dtm)
+  v=sort(rowSums(m),decreasing = TRUE)
+  d=data.frame(word=names(v),freq=v)
+  head(d,10)
+```
+
+#worldcloud
+```{r}
+ wordcloud(words = d$word,freq = d$freq,min.freq = 100,max.words = 800,random.order = FALSE,
+           rot.per=0.35,colors = brewer.pal(8,"Dark2"))
+```
+
